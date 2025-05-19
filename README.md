@@ -52,3 +52,16 @@ To export the Bigraph to a dot file:
 ```
 ./botw.exe 8 1481934 Dover -write-dot
 ```
+
+### Generate documentation
+
+First, install `odoc`
+```
+opam install odoc
+```
+
+To generate the documentation, run this command:
+```
+dune build @doc
+```
+The documentation will then be available at `_build/default/_doc/_html/index.html`. You may open it with a web browser.
