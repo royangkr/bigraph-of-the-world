@@ -10,8 +10,8 @@ let main (root_level : string) (root_id : string) (root_name : string) write_dot
     then
       let t = Sys.time () in
       let b =
-        Bigraph_of_the_world.Builder.build_place_graph root_level root_id
-          root_name id_in_parameter eval
+        Bigraph_of_the_world.Builder.build root_level root_id root_name
+          id_in_parameter eval
       in
       let _ = Printf.printf "Bigraph built in: %fs\n" (Sys.time () -. t) in
       b
@@ -57,7 +57,7 @@ let main (root_level : string) (root_id : string) (root_name : string) write_dot
     if one_reaction || all_reactions then
       let buildings =
         Core.Set.to_list
-          (Bigraph_of_the_world.Hierarchy.get_buildings_in_streets root_string)
+          (Bigraph_of_the_world.Hierarchy.buildings_in_streets root_string)
       in
       let _ = Random.self_init () in
       let random_building =
@@ -65,7 +65,7 @@ let main (root_level : string) (root_id : string) (root_name : string) write_dot
       in
       let t = Sys.time () in
       let b =
-        Bigraph_of_the_world.Builder.add_agent_to_building_react ~bigraph:b
+        Bigraph_of_the_world.Builder.add_agent_to_building ~bigraph:b
           ~agent_id:"Agent A" ~building_name:random_building
       in
       let _ = Printf.printf "Added agent in: %fs\n" (Sys.time () -. t) in

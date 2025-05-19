@@ -6,14 +6,12 @@ let api = "https://overpass-api.de/api/interpreter"
 (*"https://maps.mail.ru/osm/tools/overpass/api/interpreter"*)
 (*"https://overpass.private.coffee/api/interpreter"*)
 
-(** writes string to file*)
 let write_to_file body file_path =
   let f ch =
     Lwt_stream.iter_s (Lwt_io.write ch) (Lwt_stream.of_list [ body ])
   in
   Lwt_io.with_file ~mode:Lwt_io.output file_path f
 
-(** downloads from uri to file with name dest*)
 let rec download (uri : Uri.t) (file_path : string) =
   let _ = Core_unix.mkdir_p ~perm:0o755 (Filename.dirname file_path) in
   Lwt.catch
@@ -36,11 +34,7 @@ let rec download (uri : Uri.t) (file_path : string) =
       in
       download uri file_path)
 
-(** downloads osm file of all admin boundaries, buildings and streets in area
-    defined by root_id, as well as outer names respresnting intersections
-    between streets inside and outside area. https://overpass-turbo.eu/s/233f *)
-let query_boundaries_buildings_streets (root_level : string) (root_id : string)
-    (root_name : string) =
+let query (root_level : string) (root_id : string) (root_name : string) =
   let file_path =
     "data/" ^ root_level ^ "-" ^ root_id ^ "-" ^ root_name ^ ".osm"
   in
@@ -58,7 +52,7 @@ exception TagNotFound of string * string
 
 (** downloads osm file of all admin boundaries in area defined by root_id, and
     call queryBoundaries and queryBuildings on all child boundaries*)
-let query_all_children (root_level : string) (root_id : string)
+let query_descendants (root_level : string) (root_id : string)
     (root_name : string) (eval : bool) =
   let osm_file =
     "data/" ^ root_level ^ "-" ^ root_id ^ "-" ^ root_name ^ ".osm"
@@ -67,10 +61,7 @@ let query_all_children (root_level : string) (root_id : string)
     if not (Lwt_main.run (Lwt_unix.file_exists "data/")) then
       Core_unix.mkdir_p ~perm:0o755 "data/"
   in
-  let _ =
-    Lwt_main.run
-      (query_boundaries_buildings_streets root_level root_id root_name)
-  in
+  let _ = Lwt_main.run (query root_level root_id root_name) in
   let (Osm_xml.Types.OSM osm_record) = Osm_xml.Parser.parse_file osm_file in
   let boundaries =
     Map.filter osm_record.relations
@@ -103,8 +94,6 @@ let query_all_children (root_level : string) (root_id : string)
         | Some child_level -> (
             match Osm_xml.Types.find_tag child_relation.tags "name" with
             | None -> raise (TagNotFound ("name", child_id))
-            | Some child_name ->
-                query_boundaries_buildings_streets child_level child_id
-                  child_name)
+            | Some child_name -> query child_level child_id child_name)
       in
       Lwt_main.run (Lwt_list.iter_s f (Map.to_alist boundaries)))

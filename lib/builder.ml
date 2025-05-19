@@ -3,7 +3,7 @@ open Core
 
 exception TagNotFound of string * string
 
-let rec of_list_top_down f bs =
+let rec of_list f bs =
   let split xs =
     let rec move s d k =
       match s with
@@ -19,7 +19,7 @@ let rec of_list_top_down f bs =
   | [ b ] -> b
   | _ ->
       let l, r = split bs in
-      f (of_list_top_down f l) (of_list_top_down f r)
+      f (of_list f l) (of_list f r)
 
 let add_sites_to_right_then_nest f g =
   let diff = Big.ord_of_inter (Big.inner f) - Big.ord_of_inter (Big.outer g) in
@@ -28,16 +28,15 @@ let add_sites_to_right_then_nest f g =
     | 0 -> l
     | n -> add_sites (site :: l) (n - 1)
   in
-  if diff >= 0 then
-    Big.nest f (of_list_top_down Big.ppar (g :: add_sites [] diff))
-  else Big.nest (of_list_top_down Big.ppar (f :: add_sites [] (-diff))) g
+  if diff >= 0 then Big.nest f (of_list Big.ppar (g :: add_sites [] diff))
+  else Big.nest (of_list Big.ppar (f :: add_sites [] (-diff))) g
 
 (** given a parent to child string-to-string map and a string root, builds the
     bigraph with that root*)
-let build_place_graph (root_level : string) (root_id : string)
-    (root_name : string) (id_in_parameter : bool) (eval : bool) =
+let build (root_level : string) (root_id : string) (root_name : string)
+    (id_in_parameter : bool) (eval : bool) =
   let root_string = root_level ^ "-" ^ root_id ^ "-" ^ root_name in
-  let _ = Overpass.query_all_children root_level root_id root_name eval in
+  let _ = Overpass.query_descendants root_level root_id root_name eval in
   let boundary_to_parent =
     Hierarchy.boundary_to_parent root_level root_id root_name
   in
@@ -72,12 +71,10 @@ let build_place_graph (root_level : string) (root_id : string)
               buildings_with_no_street,
               street_name_to_way_ids_and_buildings,
               outer_names ) =
-          Hierarchy
-          .idseen_buildingswithnostreet_streetnametowayidsandbuildings_outernames
-            boundary_string id_seen
+          Hierarchy.hierarchy_from_osm boundary_string id_seen
         in
         let id_seen, way_id_to_junctions =
-          Hierarchy.way_id_to_junctions boundary_string id_seen outer_names
+          Hierarchy.junctions_of_streets boundary_string id_seen outer_names
         in
         let boundary_children_bigraphs =
           Set.fold buildings_with_no_street ~init:boundary_children_bigraphs
@@ -106,7 +103,7 @@ let build_place_graph (root_level : string) (root_id : string)
         in
         let bigraph_and_siblings =
           let boundary_graph =
-            of_list_top_down add_sites_to_right_then_nest
+            of_list add_sites_to_right_then_nest
               (Big.ppar
                  (Big.par site (* sibiling id*)
                     (if id_in_parameter then Big.id_eps
@@ -235,12 +232,12 @@ let build_place_graph (root_level : string) (root_id : string)
       let _, bigraph_list =
         helper root_string String.Set.empty [ Big.ppar Big.one Big.one ]
       in
-      of_list_top_down add_sites_to_right_then_nest bigraph_list)
+      of_list add_sites_to_right_then_nest bigraph_list)
 
 module MSSolver = Solver.Make_SAT (Solver.MS)
 module BRS = Brs.Make (MSSolver)
 
-let add_agent_to_building_react ~bigraph ~agent_id ~building_name =
+let add_agent_to_building ~bigraph ~agent_id ~building_name =
   let parent =
     Big.ion (Link.parse_face [ "id" ]) Ctrl.{ s = "Building"; p = []; i = 1 }
   in
@@ -380,3 +377,32 @@ let react_rules =
     enter_building_from_boundary;
     move_across_linked_streets;
   ]
+
+let connect_to_nearby_agent =
+  let lhs = Big.par agent agent2 in
+  let contact =
+    Big.atom
+      (Link.parse_face [ "contact" ])
+      Ctrl.{ s = "Contact"; p = []; i = 1 }
+  in
+  let rhs =
+    Big.close
+      (Link.parse_face [ "contact" ])
+      (Big.par
+         (Big.nest agent (Big.par site contact))
+         (Big.nest agent (Big.par site contact)))
+  in
+  BRS.parse_react_unsafe ~name:"connect_to_nearby_agent" ~lhs ~rhs
+    ~conds:
+      [
+        AppCond.
+          {
+            neg = false;
+            where = Param;
+            pred =
+              Big.close
+                (Link.parse_face [ "contact" ])
+                (Big.ppar contact contact);
+          };
+      ]
+    () None

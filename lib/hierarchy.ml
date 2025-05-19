@@ -67,8 +67,7 @@ let boundary_to_parent (root_level : string) (root_id : string)
   in
   helper root_level root_id root_name parent_mp
 
-let idseen_buildingswithnostreet_streetnametowayidsandbuildings_outernames
-    boundary_string id_seen =
+let hierarchy_from_osm boundary_string id_seen =
   let (Osm_xml.Types.OSM osm_record) =
     Osm_xml.Parser.parse_file ("data/" ^ boundary_string ^ ".osm")
   in
@@ -176,7 +175,7 @@ let idseen_buildingswithnostreet_streetnametowayidsandbuildings_outernames
                               (id :: way_ids, buildings)),
                         outer_names ))))
 
-let way_id_to_junctions boundary_string id_seen outer_names =
+let junctions_of_streets boundary_string id_seen outer_names =
   let (Osm_xml.Types.OSM osm_record) =
     Osm_xml.Parser.parse_file ("data/" ^ boundary_string ^ ".osm")
   in
@@ -286,7 +285,7 @@ let print_stats (b : Bigraph.Big.t) =
   in
   ()
 
-let get_buildings_in_streets boundary_string =
+let buildings_in_streets boundary_string =
   let (Osm_xml.Types.OSM osm_record) =
     Osm_xml.Parser.parse_file ("data/" ^ boundary_string ^ ".osm")
   in
