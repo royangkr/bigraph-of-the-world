@@ -1,6 +1,7 @@
 (lang dune 3.17)
 
 (name bigraph-of-the-world)
+(version 0.1)
 
 (source
  (github royangkr/bigraph-of-the-world))
