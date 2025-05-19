@@ -21,12 +21,17 @@ opam init
 
 3. Create an opam switch while in the project directory. This also installs the project's required dependencies.
 ```
-opam switch create .
+opam switch create bigraph 5.3.0
 ```
 
-4. Build the project using dune.
+4. Install dependencies
 ```
-eval $(opam env)
+eval $(opam env --switch=bigraph)
+opam install .
+```
+
+5. Build the project using dune.
+```
 dune build
 ```
 
