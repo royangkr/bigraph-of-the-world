@@ -1,7 +1,6 @@
 (lang dune 3.17)
 
 (name bigraph-of-the-world)
-(version 0.1)
 
 (source
  (github royangkr/bigraph-of-the-world))
@@ -17,6 +16,7 @@
 
 (package
  (name bigraph-of-the-world)
+ (version 0.1.0)
  (synopsis "Builds a Bigraph modelling the hierarchy of administrative boundaries, streets and buildings using OpenStreetMap data")
  (description "This tool builds a Bigraph modelling the hierarchy of administrative boundaries, streets and buildings using OpenStreetMap data. The tool works for any relation on OSM with \"admin_level\", \"id\", and \"name\" tags. When running the tool on a new administrative boundary, querying Overpass API for osm files will take a while due to rate limiting.")
  (depends 

@@ -27,7 +27,7 @@ opam switch create bigraph 5.3.0
 4. Install dependencies
 ```
 eval $(opam env --switch=bigraph)
-opam install .
+opam install . --deps-only
 ```
 
 5. Build the project using dune.
